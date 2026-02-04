@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>E-Visa Application</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen">
+
+<!-- NAVBAR -->
+<header class="bg-white dark:bg-gray-800 shadow-sm transition-colors duration-300">
+  <div class="max-w-7xl mx-auto px-6 py-4">
+    <nav class="flex justify-between items-center flex-wrap gap-4">
+      <h1 class="text-xl font-bold text-blue-600 dark:text-blue-400">🌐 E-visa</h1>
+      <div class="flex gap-4 flex-wrap items-center">
+        <a href="home.html" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition">Home</a>
+        <a href="index.html" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition">Apply visa</a>
+        <a href="About Us.html" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition">About us</a>
+        <a href="contact.html" class="text-blue-600 dark:text-blue-400 font-semibold">Contact Us</a>
+        <button id="darkModeToggle" class="ml-4 p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+          <span id="darkModeIcon">🌙</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<!-- FORM -->
+<div class="flex justify-center">
+  <div class="w-full max-w-xl bg-white dark:bg-gray-800 p-6 rounded-xl shadow">
+
+    <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">
+      E-Visa Application Form
+    </h2>
+
+    <form id="visaForm" class="space-y-4">
+      <input id="name" placeholder="Full Name" class="w-full border p-2 rounded"/>
+      <input id="passport" placeholder="Passport Number" class="w-full border p-2 rounded"/>
+
+      <select id="country" class="w-full border p-2 rounded">
+        <option value="">Select Country</option>
+      </select>
+
+      <select id="visa" class="w-full border p-2 rounded">
+        <option value="">Visa Type</option>
+        <option>Tourist</option>
+        <option>Business</option>
+        <option>Student</option>
+      </select>
+
+      <input type="date" id="arrival" class="w-full border p-2 rounded"/>
+      <input type="date" id="departure" class="w-full border p-2 rounded"/>
+
+      <button class="w-full bg-blue-600 text-white py-2 rounded">
+        Submit Application
+      </button>
+
+      <p id="error" class="text-red-500 text-sm"></p>
+    </form>
+
+  </div>
+</div>
+
+<!-- TABLE -->
+<div class="max-w-6xl mx-auto mt-10">
+  <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">
+    Applications Submitted
+  </h3>
+
+  <table class="w-full border">
+    <thead class="bg-gray-200 dark:bg-gray-700">
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Passport</th>
+        <th>Country</th>
+        <th>Visa</th>
+        <th>Arrival</th>
+        <th>Departure</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<!-- JAVASCRIPT -->
+<script>
+// --------------- COUNTRIES ---------------
+const countrySelect = document.getElementById("country");
+
+const countries = [
+  "Somalia","Kenya","Turkey","UK","USA","Canada","Australia","Germany",
+  "France","Italy","Ethiopia","Uganda","Tanzania","Sudan","South Sudan",
+  "Djibouti","Egypt","Morocco","Algeria","Tunisia","Libya","Nigeria",
+  "Ghana","Senegal","Mali","Mauritania","Niger","Chad","Cameroon",
+  "Burkina Faso","Cote d'Ivoire","Sierra Leone","Liberia","Gambia",
+  "Guinea","Guinea-Bissau","Equatorial Guinea","Central African Republic",
+  "Rwanda","Burundi","Mozambique","Zambia","Zimbabwe","Malawi",
+  "Botswana","Namibia","South Africa","Lesotho","Eswatini","Angola",
+  "Mauritius","Seychelles","Comoros","Cape Verde","Madagascar","Eritrea"
+];
+
+countries.forEach(country => {
+  const option = document.createElement("option");
+  option.value = country;
+  option.text = country;
+  countrySelect.appendChild(option);
+});
+
+// --------------- FORM & TABLE ---------------
+const form = document.getElementById("visaForm");
+const table = document.getElementById("tableBody");
+const errorMsg = document.getElementById("error");
+
+let apps = JSON.parse(localStorage.getItem("apps")) || [];
+
+form.addEventListener("submit", function(e){
+  e.preventDefault();
+
+  const name = document.getElementById("name").value.trim();
+  const passport = document.getElementById("passport").value.trim();
+  const country = document.getElementById("country").value;
+  const visa = document.getElementById("visa").value;
+  const arrival = document.getElementById("arrival").value;
+  const departure = document.getElementById("departure").value;
+
+  errorMsg.textContent = "";
+
+  // Name letters only
+  const nameRegex = /^[A-Za-z\s]+$/;
+  if(!nameRegex.test(name)){
+    errorMsg.textContent = "Full Name must contain letters only";
+    return;
+  }
+
+  // Passport numbers only
+  const passportRegex = /^[0-9]+$/;
+  if(!passportRegex.test(passport)){
+    errorMsg.textContent = "Passport must contain numbers only";
+    return;
+  }
+
+  // Required fields
+  if(country === "" || visa === "" || arrival === "" || departure === ""){
+    errorMsg.textContent = "Fill all fields";
+    return;
+  }
+
+  // Date validation
+  if(new Date(departure) <= new Date(arrival)){
+    errorMsg.textContent = "Departure must be after arrival";
+    return;
+  }
+
+  const app = {name, passport, country, visa, arrival, departure, status:"Pending"};
+  apps.push(app);
+  localStorage.setItem("apps", JSON.stringify(apps));
+
+  displayApps();
+  form.reset();
+});
+
+function displayApps(){
+  table.innerHTML = "";
+
+  if(apps.length === 0){
+    table.innerHTML = `<tr><td colspan="9" class="text-center p-4">No applications yet</td></tr>`;
+    return;
+  }
+
+  apps.forEach((app, index)=>{
+    table.innerHTML += `
+      <tr class="text-center border">
+        <td>${index+1}</td>
+        <td>${app.name}</td>
+        <td>${app.passport}</td>
+        <td>${app.country}</td>
+        <td>${app.visa}</td>
+        <td>${app.arrival}</td>
+        <td>${app.departure}</td>
+        <td>${app.status}</td>
+        <td>
+          <button onclick="deleteApp(${index})" class="bg-red-500 text-white px-2 py-1 rounded">
+            Delete
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+function deleteApp(index){
+  apps.splice(index,1);
+  localStorage.setItem("apps", JSON.stringify(apps));
+  displayApps();
+}
+
+displayApps();
+
+// --------------- DARK MODE ---------------
+const toggle = document.getElementById('darkModeToggle');
+const icon = document.getElementById('darkModeIcon');
+const html = document.documentElement;
+
+toggle.onclick = ()=>{
+  html.classList.toggle('dark');
+  icon.textContent = html.classList.contains('dark') ? '☀️' : '🌙';
+};
+</script>
+
+</body>
+</html>
